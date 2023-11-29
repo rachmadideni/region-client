@@ -30,7 +30,12 @@ const axiosVendor = baseAxios.create({
             let resp;
             try {
                 resp = JSON.parse(response)                
-                return resp.data;
+                console.log(resp)
+                // return resp.data;
+                return {
+                    data: resp.data,
+                    meta: resp.meta
+                } 
             } catch (err) {
                 console.log(err)
                 return JSON.parse(response)

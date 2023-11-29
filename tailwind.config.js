@@ -34,5 +34,6 @@ export default withMT({
     // fontFamily: {...fontFamily}
   },
   // eslint-disable-next-line no-undef
-  // plugins: [require('flowbite/plugin')],
+  plugins: [require('flowbite/plugin')],
+  
 })

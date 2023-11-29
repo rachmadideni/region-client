@@ -9,6 +9,9 @@ import PropTypes from "prop-types";
 import LoginPage from "./containers/LoginPage";
 import AdminPage from "./containers/AdminPage";
 import ProvincePage from "./containers/ProvincePage";
+import CityPage from "./containers/CityPage";
+import DistrictPage from "./containers/DistrictPage";
+import SubDistrictPage from "./containers/SubDistrictPage";
 
 const ProtectedRoute = ({ token, children }) => {
   if (!token) {
@@ -61,12 +64,16 @@ const router = createBrowserRouter([
       },
       {
         path: 'city',
-        element: <div>city</div>
+        element: <CityPage />
       },
       {
         path: 'district',
-        element: <div>district</div>
+        element: <DistrictPage />
       },
+      {
+        path: 'subdistrict',
+        element: <SubDistrictPage />
+      }
     ]
   },
 ]);

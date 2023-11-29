@@ -23,11 +23,12 @@ import { rankItem } from "@tanstack/match-sorter-utils";
 import Table from "../../components/Table";
 import Dialog from "../../components/Dialog";
 import Toast from "../../components/Toast";
-import FormCreate from "../../features/province/FormCreate";
-import FormUpdate from "../../features/province/FormUpdate";
-import FormDeleteConfirmation from "../../features/province/FormDeleteConfirmation";
+import FormCreate from "../../features/city/FormCreate";
+import FormUpdate from "../../features/city/FormUpdate";
+import FormDeleteConfirmation from "../../features/city/FormDeleteConfirmation";
 
-import { findAllProvince, deleteProvince } from "../../services/province.service";
+import { findAllProvince } from "../../services/province.service";
+import { findAllCity, deleteCity } from "../../services/city.service";
 
 import { HiOutlineMagnifyingGlass } from "react-icons/hi2";
 import { AiOutlineEdit, AiOutlineDelete } from "react-icons/ai";
@@ -48,7 +49,7 @@ const fuzzyFilter = (row, columnId, value, addMeta) => {
   return itemRank.passed;
 };
 
-const ProvincePage = () => {
+const CityPage = () => {
   const [data, setData] = useState([]);
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [selectedRowId, setSelectedRowId] = useState(null);
@@ -57,6 +58,19 @@ const ProvincePage = () => {
   const [selectRowForDelete, setSelectRowForDelete] = useState();
   const [globalFilter, setGlobalFilter] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // options for select
+    const [provinces, setProvinces] = useState([]);
+    const [cityTypes, setCityTypes] = useState([
+      {
+        key: 1,
+        label: "KOTA",
+      },
+      {
+        key: 2,
+        label: "KABUPATEN",
+      },
+    ]);
 
   const columns = [
     columnHelper.accessor("id", {
@@ -67,7 +81,7 @@ const ProvincePage = () => {
       header: () => <span className="w-3">id</span>,
       cell: (info) => info.getValue(),
     }),
-    columnHelper.accessor("oid_province", {
+    columnHelper.accessor("oid_city", {
       maxWidth: 4,
       minWidth: 4,
       width: 4,
@@ -75,13 +89,35 @@ const ProvincePage = () => {
       header: () => <span className="">oid</span>,
       cell: (info) => info.getValue(),
     }),
-    columnHelper.accessor("province_name", {
+    columnHelper.accessor("province.province_name", {
+      maxWidth: 4,
+      minWidth: 4,
+      width: 4,
+      size: 4,
+      header: () => <span className="">Province</span>,
+      cell: (info) => info.getValue(),
+    }),
+    columnHelper.accessor("oid_cititype", {
+      maxWidth: 4,
+      minWidth: 4,
+      width: 4,
+      size: 4,
+      header: () => <span className="">Type</span>,
+      cell: (info) => {
+        return (
+          <span className="uppercase">
+            {info.getValue() === 2 ? "kabupaten" : "kota"}
+          </span>
+        );
+      },
+    }),
+    columnHelper.accessor("city_name", {
       width: 10,
       header: () => <span className="">name</span>,
       cell: (info) => info.getValue(),
       filterFn: "fuzzy",
     }),
-    columnHelper.accessor("action", {      
+    columnHelper.accessor("action", {
       header: () => <span className="">action</span>,
       cell: ({ cell }) => (
         <>
@@ -97,8 +133,10 @@ const ProvincePage = () => {
 
                 setSelectedRow({
                   id: row.id,
-                  oid: row.oid_province,
-                  provinceName: row.province_name,
+                  oidCity: row.oid_city,
+                  oidProvince: row.oid_province,
+                  oidCityType: row.oid_cititype,
+                  cityName: row.city_name,
                 });
               }}
             >
@@ -111,11 +149,15 @@ const ProvincePage = () => {
               className="text-red-400 hover:bg-transparent hover:text-red-900"
               onClick={() => {
                 setDeleteRowId(cell.row.original.id);
-                const row = data.find((item) => item.id === cell.row.original.id)
+                const row = data.find(
+                  (item) => item.id === cell.row.original.id
+                );
+
+                console.log("setSelectRowForDelete", row);
                 setSelectRowForDelete({
                   id: row.id,
-                  oid: row.oid_province,
-                  provinceName: row.province_name,
+                  oid: row.oid_city,
+                  cityName: row.city_name,
                 });
               }}
             >
@@ -140,15 +182,36 @@ const ProvincePage = () => {
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),    
+    getFilteredRowModel: getFilteredRowModel(),
   });
 
-  const getProvince = async () => {
-    const response = await findAllProvince();
+  const getCities = async () => {
+    const response = await findAllCity();
     setData(response.data.data);
   };
 
-  useEffect(() => {    
+  const transformAsOptions = async (data, key, label) => {
+    if (data.length > 0) {      
+      return data.map((item) => ({
+        key: item[key],
+        label: item[label],
+      }));
+    }
+  };
+
+  const getProvince = async () => {
+    const response = await findAllProvince();
+    let AsOptions = await transformAsOptions(
+      response.data.data,
+      "oid_province",
+      "province_name"
+    );
+
+    setProvinces(AsOptions);
+  };
+
+  useEffect(() => {
+    getCities();
     getProvince();
   }, []);
 
@@ -171,14 +234,14 @@ const ProvincePage = () => {
   const handleDelete = async () => {
     if (selectRowForDelete) {
       try {
-        const response = await deleteProvince(selectRowForDelete.id);
+        const response = await deleteCity(selectRowForDelete.id);
         if (response.status === 200) {
-          handleToast("deleteSuccess", "Province deleted successfully");
+          handleToast("deleteSuccess", "City deleted successfully");
           setDeleteRowId(null);
-          setSelectRowForDelete()
-          getProvince();
+          setSelectRowForDelete();
+          getCities();
         }
-      } catch (err) {        
+      } catch (err) {
         const respText = err?.response?.request?.responseText;
         const parsedRespText = JSON.parse(respText);
         if (err.response.status === 409 || err.response.status === 500) {
@@ -187,13 +250,13 @@ const ProvincePage = () => {
         }
       }
     }
-  }
+  };
 
   return (
     <div className="w-full h-screen space-y-4">
       <div className="flex flex-col">
         <Typography className="text-xl font-bold text-gray-800 font-sans">
-          Manage Province
+          Manage Cities
         </Typography>
         <Typography className="text-xs text-gray-500">lorem ipsum</Typography>
       </div>
@@ -220,7 +283,6 @@ const ProvincePage = () => {
                 </div>
               </div>
               <div>
-                {selectedRowId}
                 <Button
                   className="flex items-center gap-3 rounded-md bg-green-800"
                   size="sm"
@@ -239,41 +301,46 @@ const ProvincePage = () => {
           </CardFooter>
         </Card>
         <Dialog
-          title="Create new province"
+          title="Create new city"
           open={openCreateDialog}
           size="xs"
           handleOpenClose={() => setOpenCreateDialog(false)}
         >
           <FormCreate
+            provinces={provinces}
+            cityTypes={cityTypes}
             isSubmitting={isSubmitting}
             handleButtonLoader={handleButtonLoader}
             handleToast={handleToast}
-            handleRefresh={getProvince}
+            handleRefresh={getCities}
           />
         </Dialog>
 
         <Dialog
-          title="edit province"
+          title="edit city"
           open={Boolean(selectedRowId) ?? false}
           size="xs"
           handleOpenClose={() => setSelectedRowId(null)}
         >
           <FormUpdate
             data={selectedRow}
+            provinces={provinces}
+            cityTypes={cityTypes}
             isSubmitting={isSubmitting}
             handleButtonLoader={handleButtonLoader}
             handleToast={handleToast}
-            handleRefresh={getProvince}
+            handleRefresh={getCities}
           />
           {/* Edit {selectedRowId} */}
         </Dialog>
 
         <Dialog
-          title="Delete Province"
+          title="Delete City"
           open={Boolean(deleteRowId) ?? false}
           size="xs"
           handleOpenClose={() => setDeleteRowId(null)}
         >
+          {/* {JSON.stringify(selectRowForDelete)} */}
           <FormDeleteConfirmation
             data={selectRowForDelete}
             onCancel={() => setDeleteRowId(null)}
@@ -287,4 +354,4 @@ const ProvincePage = () => {
   );
 };
 
-export default ProvincePage;
+export default CityPage;

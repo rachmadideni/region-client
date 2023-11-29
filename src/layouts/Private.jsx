@@ -231,6 +231,10 @@ const MENU = [
         route: `/admin/district`,
         title: capitalizedSentences("district"),
       },
+      {
+        route: `/admin/subdistrict`,
+        title: capitalizedSentences("subdistrict"),
+      },
     ],
   },
   {

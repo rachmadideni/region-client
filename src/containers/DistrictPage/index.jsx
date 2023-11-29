@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import {
   Typography,
   Card,
-  CardHeader,
-  Input,
+  CardHeader,  
   Button,
   CardBody,
   Tooltip,
@@ -23,13 +22,14 @@ import { rankItem } from "@tanstack/match-sorter-utils";
 import Table from "../../components/Table";
 import Dialog from "../../components/Dialog";
 import Toast from "../../components/Toast";
-import FormCreate from "../../features/province/FormCreate";
-import FormUpdate from "../../features/province/FormUpdate";
-import FormDeleteConfirmation from "../../features/province/FormDeleteConfirmation";
+import InputFilter from "../../components/InputFilter";
+import FormCreate from "../../features/district/FormCreate";
+import FormUpdate from "../../features/district/FormUpdate";
+import FormDeleteConfirmation from "../../features/district/FormDeleteConfirmation";
 
-import { findAllProvince, deleteProvince } from "../../services/province.service";
+import { findAllDistrict, searchDistrictByName, deleteDistrict } from "../../services/district.service";
+import { findAllCity } from "../../services/city.service";
 
-import { HiOutlineMagnifyingGlass } from "react-icons/hi2";
 import { AiOutlineEdit, AiOutlineDelete } from "react-icons/ai";
 
 import toast from "react-hot-toast";
@@ -48,8 +48,14 @@ const fuzzyFilter = (row, columnId, value, addMeta) => {
   return itemRank.passed;
 };
 
-const ProvincePage = () => {
+const DistrictPage = () => {
   const [data, setData] = useState([]);
+  const [paging, setPaging] = useState({
+    page: 1,
+    order: "ASC",
+    take: 10
+  });
+
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [selectedRowId, setSelectedRowId] = useState(null);
   const [selectedRow, setSelectedRow] = useState();
@@ -58,6 +64,8 @@ const ProvincePage = () => {
   const [globalFilter, setGlobalFilter] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // options for select
+  const [cities, setCities] = useState([]);
   const columns = [
     columnHelper.accessor("id", {
       maxWidth: 4,
@@ -67,21 +75,29 @@ const ProvincePage = () => {
       header: () => <span className="w-3">id</span>,
       cell: (info) => info.getValue(),
     }),
-    columnHelper.accessor("oid_province", {
+    columnHelper.accessor("oid_district", {
       maxWidth: 4,
       minWidth: 4,
       width: 4,
       size: 4,
-      header: () => <span className="">oid</span>,
+      header: () => <span className="">Oid District</span>,
       cell: (info) => info.getValue(),
-    }),
-    columnHelper.accessor("province_name", {
+    }),    
+    columnHelper.accessor("cities.city_name", {
+      maxWidth: 4,
+      minWidth: 4,
+      width: 4,
+      size: 4,
+      header: () => <span className="">City</span>,
+      cell: (info) => info.getValue(),
+    }),    
+    columnHelper.accessor("district_name", {
       width: 10,
       header: () => <span className="">name</span>,
       cell: (info) => info.getValue(),
       filterFn: "fuzzy",
     }),
-    columnHelper.accessor("action", {      
+    columnHelper.accessor("action", {
       header: () => <span className="">action</span>,
       cell: ({ cell }) => (
         <>
@@ -94,11 +110,11 @@ const ProvincePage = () => {
                 const row = data.find(
                   (item) => item.id === cell.row.original.id
                 );
-
                 setSelectedRow({
                   id: row.id,
-                  oid: row.oid_province,
-                  provinceName: row.province_name,
+                  oidDistrict: row.oid_district,
+                  oidCity: row.oid_city,
+                  districtName: row.district_name,
                 });
               }}
             >
@@ -111,11 +127,14 @@ const ProvincePage = () => {
               className="text-red-400 hover:bg-transparent hover:text-red-900"
               onClick={() => {
                 setDeleteRowId(cell.row.original.id);
-                const row = data.find((item) => item.id === cell.row.original.id)
+                const row = data.find(
+                  (item) => item.id === cell.row.original.id
+                );
+
+                // console.log("setSelectRowForDelete", row);
                 setSelectRowForDelete({
-                  id: row.id,
-                  oid: row.oid_province,
-                  provinceName: row.province_name,
+                  id: row.id,                  
+                  districtName: row.district_name,
                 });
               }}
             >
@@ -140,16 +159,45 @@ const ProvincePage = () => {
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),    
+    getFilteredRowModel: getFilteredRowModel(),
+    // debugTable: false,
+    // manualFiltering: false
   });
 
-  const getProvince = async () => {
-    const response = await findAllProvince();
+  const getAllDistrict = async () => {
+    const response = await findAllDistrict();
+
+    // console.log(response)
     setData(response.data.data);
+    // setPaging(response.data.meta);
   };
 
-  useEffect(() => {    
-    getProvince();
+  
+  const transformAsOptions = async (data, key, label) => {
+    if (data.length > 0) {      
+      return data.map((item) => ({
+        key: item[key],
+        label: item[label],
+      }));
+    }
+  };
+  
+  
+  const getCities = async () => {
+    const response = await findAllCity();
+    let AsOptions = await transformAsOptions(
+      response.data.data,
+      "oid_city",
+      "city_name"
+    );
+
+    setCities(AsOptions);
+  };
+  
+
+  useEffect(() => {
+    getAllDistrict();
+    getCities();
   }, []);
 
   const handleButtonLoader = () => {
@@ -171,14 +219,14 @@ const ProvincePage = () => {
   const handleDelete = async () => {
     if (selectRowForDelete) {
       try {
-        const response = await deleteProvince(selectRowForDelete.id);
+        const response = await deleteDistrict(selectRowForDelete.id);
         if (response.status === 200) {
-          handleToast("deleteSuccess", "Province deleted successfully");
+          handleToast("deleteSuccess", "District deleted successfully");
           setDeleteRowId(null);
-          setSelectRowForDelete()
-          getProvince();
+          setSelectRowForDelete();
+          getAllDistrict();
         }
-      } catch (err) {        
+      } catch (err) {
         const respText = err?.response?.request?.responseText;
         const parsedRespText = JSON.parse(respText);
         if (err.response.status === 409 || err.response.status === 500) {
@@ -187,13 +235,33 @@ const ProvincePage = () => {
         }
       }
     }
+  };
+
+  // pagination
+
+  const handlePageChange = (props) => {
+    console.log(props)
+    setPaging({
+      ...paging,
+      page: props.page
+    })
+  }
+
+  useEffect(() => {
+    getAllDistrict()
+  }, [paging.page])
+
+  const filterData = async () => {
+    const response = await searchDistrictByName(paging, globalFilter);
+    setData(response.data.data);
+    setPaging(response.data.meta);
   }
 
   return (
     <div className="w-full h-screen space-y-4">
       <div className="flex flex-col">
         <Typography className="text-xl font-bold text-gray-800 font-sans">
-          Manage Province
+          Manage District
         </Typography>
         <Typography className="text-xs text-gray-500">lorem ipsum</Typography>
       </div>
@@ -207,20 +275,20 @@ const ProvincePage = () => {
           >
             <div className="mb-0 flex flex-col justify-between items-center gap-8 md:flex-row md:items-center">
               <div className="flex w-full shrink-0 gap-2 md:w-max pb-2">
-                <div className="w-full items-between md:w-72">
-                  <Input
+                <div className="w-full items-between md:w-72">                  
+                  <InputFilter
                     label="Search"
-                    color="teal"
-                    size="md"
-                    className="w-full"
+                    className="pr-20"
+                    containerProps={{
+                      className: "min-w-0",
+                      
+                    }}
                     value={globalFilter ?? ""}
                     onChange={(evt) => setGlobalFilter(evt.target.value)}
-                    icon={<HiOutlineMagnifyingGlass className="h-5 w-5" />}
-                  />
+                    onButtonClick={filterData} />
                 </div>
               </div>
               <div>
-                {selectedRowId}
                 <Button
                   className="flex items-center gap-3 rounded-md bg-green-800"
                   size="sm"
@@ -234,46 +302,53 @@ const ProvincePage = () => {
           <CardBody className="overflow-scroll no-scrollbar ">
             <Table tableInstance={table} />
           </CardBody>
-          <CardFooter className="flex items-center justify-center gap-3 border-t border-blue-gray-50 p-4">
+          <CardFooter className="flex items-center justify-center gap-3 border-t border-blue-gray-50 p-4">            
+            {/* <Table.Pagination
+              tableInstance={table}
+              meta={paging}
+              handlePageChange={handlePageChange} /> */}
+            
             <Table.Pagination tableInstance={table} />
           </CardFooter>
         </Card>
         <Dialog
-          title="Create new province"
+          title="Create new district"
           open={openCreateDialog}
           size="xs"
           handleOpenClose={() => setOpenCreateDialog(false)}
         >
           <FormCreate
+            cities={cities}
             isSubmitting={isSubmitting}
             handleButtonLoader={handleButtonLoader}
             handleToast={handleToast}
-            handleRefresh={getProvince}
+            handleRefresh={getAllDistrict}
           />
         </Dialog>
 
         <Dialog
-          title="edit province"
+          title="edit district"
           open={Boolean(selectedRowId) ?? false}
           size="xs"
           handleOpenClose={() => setSelectedRowId(null)}
         >
           <FormUpdate
             data={selectedRow}
+            cities={cities}
             isSubmitting={isSubmitting}
             handleButtonLoader={handleButtonLoader}
             handleToast={handleToast}
-            handleRefresh={getProvince}
-          />
-          {/* Edit {selectedRowId} */}
+            handleRefresh={getAllDistrict}
+          />          
         </Dialog>
 
         <Dialog
-          title="Delete Province"
+          title="Delete District"
           open={Boolean(deleteRowId) ?? false}
           size="xs"
           handleOpenClose={() => setDeleteRowId(null)}
         >
+          {/* {JSON.stringify(selectRowForDelete)} */}
           <FormDeleteConfirmation
             data={selectRowForDelete}
             onCancel={() => setDeleteRowId(null)}
@@ -287,4 +362,4 @@ const ProvincePage = () => {
   );
 };
 
-export default ProvincePage;
+export default DistrictPage;
