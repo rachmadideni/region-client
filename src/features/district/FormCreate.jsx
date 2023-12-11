@@ -4,7 +4,6 @@ import * as Yup from "yup";
 import PropTypes from "prop-types";
 import Select from "../../components/Select";
 import ReactSelect from "react-select";
-import { createCity } from "../../services/city.service";
 
 import { createDistrict } from "../../services/district.service";
 

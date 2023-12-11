@@ -1,32 +1,35 @@
-import Select from 'react-select'
-import AsyncSelect from 'react-select/async';
+import { AsyncPaginate } from "react-select-async-paginate";
 import PropTypes from "prop-types";
-// import { useField } from "formik";
-
-// const options = [
-//     { value: 'chocolate', label: 'Chocolate' },
-//     { value: 'strawberry', label: 'Strawberry' },
-//     { value: 'vanilla', label: 'Vanilla' }
-// ]
 
 const SearchAutoComplete = (props) => {
-    // const [ field ] = useField(props)
     return (
-        <Select
-            classNames={{
+        <AsyncPaginate
+              classNames={{
                 control: (baseStyles) => ({
-                    ...baseStyles,
-                    borderColor: 'red',
-                })
+                  ...baseStyles,
+                  borderColor: "red",
+                }),
+              }}
+            isLoading={false}
+            value={props.value}
+            cacheOptions
+            loadOptions={props.loadOptions}
+            onChange={props.onChange}
+            additional={{
+                page: 1
             }}
-            // cacheOptions
-            // {...field}
-            {...props} />
-    )
-} 
+            getOptionLabel={(option) => `${option.oid_district} - ${option.district_name}`}
+            getOptionValue={(option) => `${option.oid_district}`}
+            {...props}
+    />
+  );
+};
 
 SearchAutoComplete.propTypes = {
-    options: PropTypes.array,
-}
+    value: PropTypes.string,
+  options: PropTypes.array,
+    loadOptions: PropTypes.func,
+  onChange: PropTypes.func
+};
 
 export default SearchAutoComplete;

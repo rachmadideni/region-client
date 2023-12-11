@@ -25,7 +25,7 @@ import Toast from "../../components/Toast";
 import InputFilter from "../../components/InputFilter";
 import FormCreate from "../../features/subdistrict/FormCreate";
 import FormUpdate from "../../features/subdistrict/FormUpdate";
-import FormDeleteConfirmation from "../../features/district/FormDeleteConfirmation";
+import FormDeleteConfirmation from "../../features/subdistrict/FormDeleteConfirmation";
 
 import {
     findAllDistrict,
@@ -36,7 +36,8 @@ import {
 
 import {
     findAllSubDistrict,
-    searchSubDistrictByName
+    searchSubDistrictByName,
+    deleteSubDistrict
 } from "../../services/subdistrict.service"; 
 import { findAllSubDistrictType } from "../../services/subdistricttype.service";
 import { findAllCity } from "../../services/city.service";
@@ -133,12 +134,13 @@ const SubDistrictPage = () => {
                                     (item) => item.id === cell.row.original.id
                                 );
                                 
-                                // console.log({ row })
+                                console.log({ row })
                                 
                                 setSelectedRow({
                                     id: row.id,
                                     oidSubDistrict: row.oid_subdistrict,
                                     oidDistrict: row.oid_district,
+                                    districtName: row.districtes.district_name,
                                     subDistrictName: row.subdistrict_name,
                                     oidSubDistrictType: row.oid_subdistricttype,
                                     postCode: row.post_code,
@@ -223,30 +225,16 @@ const SubDistrictPage = () => {
     const transformAsOptions = async (data, key, label) => {
         if (data.length > 0) {
             return data.map((item) => ({
-                key: item[key],
+                value: item[key],
                 label: item[label],
             }));
         }
     };
 
-
-    const getCities = async () => {
-        const response = await findAllCity();
-        let AsOptions = await transformAsOptions(
-            response.data.data,
-            "oid_city",
-            "city_name"
-        );
-
-        setCities(AsOptions);
-    };
-
-
     useEffect(() => {
         getAllSubDistrict();
         getAllSubDistrictType();
         getAllDistrict();
-        // getCities();
     }, []);
 
     const handleButtonLoader = () => {
@@ -268,12 +256,12 @@ const SubDistrictPage = () => {
     const handleDelete = async () => {
         if (selectRowForDelete) {
             try {
-                const response = await deleteDistrict(selectRowForDelete.id);
+                const response = await deleteSubDistrict(selectRowForDelete.id);
                 if (response.status === 200) {
-                    handleToast("deleteSuccess", "District deleted successfully");
+                    handleToast("deleteSuccess", "Sub District deleted successfully");
                     setDeleteRowId(null);
                     setSelectRowForDelete();
-                    // getAllDistrict();
+                    getAllDistrict();
                 }
             } catch (err) {
                 const respText = err?.response?.request?.responseText;
@@ -360,8 +348,7 @@ const SubDistrictPage = () => {
                         <Table tableInstance={table} />
                     </CardBody>
                     <CardFooter className="flex items-center justify-center gap-3 border-t border-blue-gray-50 p-4">
-
-                        {/* {JSON.stringify(cities, null, 2)} */}
+                        {/* {JSON.stringify(districtes, null, 2)} */}
                         {/* {JSON.stringify(globalFilter,null, 2)} */}
                         {/* {JSON.stringify(paging)} */}
                         <Table.Pagination tableInstance={table} />
@@ -402,7 +389,7 @@ const SubDistrictPage = () => {
                         handleToast={handleToast}
                         handleRefresh={getAllSubDistrict}
                     />
-                    Edit {selectedRowId}
+                    {/* Edit {selectedRowId} */}
                 </Dialog>
 
                 <Dialog

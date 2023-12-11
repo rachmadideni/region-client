@@ -72,7 +72,7 @@ const FormCreate = ({
     >
       {({ errors, values, touched }) => (
         <Form className="flex flex-col gap-4">
-          {JSON.stringify(values, null)}
+          {/* {JSON.stringify(values, null)} */}
           <Field name="oidCity">
             {({ field, meta }) => (
               <>
